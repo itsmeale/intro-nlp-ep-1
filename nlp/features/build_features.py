@@ -15,12 +15,21 @@ from nlp.toolbox.preprocessing import (
 
 RAW_ABORTION_FILE = Path("data", "raw", "ep1_abortion_train.csv")
 RAW_GUN_FILE = Path("data", "raw", "ep1_gun-control_train.csv")
-BOW_FILEPATH = Path("data", "interim", "bow.parquet")
-TFIDF_FILEPATH = Path("data", "interim", "tfidf.parquet")
 
 DATASET_TOPIC: Dict = {
     RAW_ABORTION_FILE: "abortion",
     RAW_GUN_FILE: "gun-control",
+}
+
+VECTORIZERS: Dict = {
+    CountVectorizer: {
+        "output_file": "data/interim/bow_1-1.parquet",
+        "ngram_range": (1, 1),
+    },
+    TfidfVectorizer: {
+        "output_file": "data/interim/tfidf_1-1.parquet",
+        "ngram_range": (1, 1),
+    },
 }
 
 
@@ -64,20 +73,14 @@ def main():
     df: pd.DataFrame = load_datasets()
     preprocessed_df: pd.DataFrame = preprocess_dataframe(df, documents_col)
 
-    bag_of_words_df: pd.DataFrame = vectorize_text_data(
-        df=preprocessed_df,
-        document_col=documents_col,
-        Vectorizer=CountVectorizer,
-    )
-
-    tfidf_df: pd.DataFrame = vectorize_text_data(
-        df=preprocessed_df,
-        document_col=documents_col,
-        Vectorizer=TfidfVectorizer,
-    )
-
-    write_dataset(bag_of_words_df, BOW_FILEPATH)
-    write_dataset(tfidf_df, TFIDF_FILEPATH)
+    for vectorizer, vectorizer_params in VECTORIZERS.items():
+        vectorizer_df = vectorize_text_data(
+            df=preprocessed_df,
+            document_col=documents_col,
+            Vectorizer=vectorizer,
+            ngram_range=vectorizer_params["ngram_range"],
+        )
+        write_dataset(vectorizer_df, vectorizer_params["output_file"])
 
 
 if __name__ == "__main__":
